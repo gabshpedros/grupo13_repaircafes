@@ -1,14 +1,16 @@
 # Repair Cafés pelo mundo: o que dá para consertar?
 
-**Grupo:** grupoX
+**Grupo:** grupo13
 
 **Banco de dados:** [Repair Cafes Worldwide](https://github.com/rfordatascience/tidytuesday/blob/main/data/2026/2026-04-07/readme.md) (TidyTuesday, 07/04/2026), com dados do [Repair Monitor](https://dashboard.repairmonitor.org/?language=en).
 
 **Integrantes:**
 
-- Nome 1
-- Nome 2
-- Nome 3
+- Igor Marcon
+- Kelvin
+- Gabriele Henrique Pedro Sardá
+- Gabriel
+- Vinicius
 
 **Links:**
 
