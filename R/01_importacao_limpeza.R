@@ -2,7 +2,7 @@
 # 01_importacao_limpeza.R
 # Importa os dados do TidyTuesday (Repair Cafes, 2026-04-07), faz a limpeza e salva a base tratada usada no relatório e no app.
 # ------------------------------------------------------------------------------
-install.packages("tidyverse")
+
 library(tidyverse)
 
 url_base <- "https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2026/2026-04-07/"
