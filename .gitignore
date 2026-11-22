@@ -3,3 +3,14 @@
 .RData
 .Ruserdata
 .DS_Store
+
+# dados brutos
+data/raw/
+
+# Quarto
+/.quarto/
+relatorio/*_files/
+relatorio/*_cache/
+
+# deploy do shiny
+app/rsconnect/
