@@ -1,0 +1,258 @@
+
+---
+title: "Repair Cafés pelo mundo: o que dá para consertar?"
+subtitle: "Análise estatística dos fatores associados ao sucesso de reparos colaborativos (2015–2026)"
+author:
+  - "Igor Marcon"
+  - "Kelvin"
+  - "Gabriele Henrique Pedro Sardá"
+  - "Gabriel"
+  - "Vinícius Eduardo Batista"
+date: today
+date-format: "DD/MM/YYYY"
+lang: pt-BR
+format:
+  html:
+    toc: true
+    toc-title: "Sumário"
+    number-sections: true
+    theme: cosmo
+    code-fold: true
+    code-summary: "Mostrar código R"
+    embed-resources: true
+  pdf:
+    toc: true
+    number-sections: true
+    documentclass: article
+    geometry: margin=2.5cm
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+library(tidyverse)
+library(knitr)
+
+reparos        <- readRDS("../data/reparos.rds")
+resumo_limpeza <- readRDS("../data/resumo_limpeza.rds")
+resultados     <- readRDS("../data/resultados.rds")
+
+fmt_int <- function(x) format(round(x), big.mark = ".", decimal.mark = ",", scientific = FALSE)
+fmt_dec <- function(x, casas = 1) format(round(x, casas), big.mark = ".", decimal.mark = ",", nsmall = casas)
+fmt_pct <- function(x, casas = 1) paste0(fmt_dec(x * 100, casas), "%")
+fmt_p   <- function(p) ifelse(p < 0.001, "< 0,001", fmt_dec(p, 3))
+
+theme_set(
+  theme_minimal(base_size = 11) +
+    theme(
+      plot.title = element_text(face = "bold", size = 12),
+      plot.subtitle = element_text(color = "grey35", size = 10),
+      panel.grid.minor = element_blank()
+    )
+)
+```
+
+# Introdução {#sec-introducao}
+
+O modelo linear de produção e consumo — baseado na extração de recursos, fabricação, uso e descarte acelerado — tem gerado volumes crescentes de resíduos sólidos, especialmente resíduos de equipamentos eletroeletrônicos (REEE), têxteis e bens de consumo duráveis. Diante das barreiras impostas pela obsolescência programada e pelos elevados custos de assistência técnica autorizada, surgiram iniciativas comunitárias voltadas ao prolongamento da vida útil dos objetos cotidianos. Entre elas, destacam-se os *Repair Cafés*, encontros gratuitos e colaborativos iniciados nos Países Baixos em 2009, nos quais cidadãos levam itens danificados para repará-los em conjunto com voluntários especialistas (Charter & Keiller, 2014).
+
+Além do impacto ambiental e social direto, a rede global de *Repair Cafés* sistematiza registros detalhados de cada atendimento por meio da plataforma *Repair Monitor*, documentando características dos produtos, defeitos identificados, notas de reparabilidade e desfechos das intervenções. Essa base empírica permite investigar não apenas a viabilidade técnica do conserto comunitário, mas também os gargalos de projeto e de mercado que impedem a recuperação de determinados bens.
+
+O objetivo deste estudo é analisar os determinantes associados ao sucesso dos reparos realizados nos *Repair Cafés* ao redor do mundo entre `r format(resultados$visao_geral$data_ini, "%Y")` e `r format(resultados$visao_geral$data_fim, "%Y")`. Especificamente, busca-se:
+
+1. Caracterizar o panorama global dos atendimentos e a evolução temporal da taxa de sucesso;
+2. Avaliar diferenças nas taxas de conserto entre categorias de produtos e países com maior volume de registros;
+3. Investigar a relação entre o índice de reparabilidade atribuído pelos técnicos, a idade do produto e a probabilidade de reparo completo;
+4. Identificar os principais motivos de falha e o papel da consulta a fontes de informação técnica (incluindo manuais, plataformas colaborativas e inteligência artificial generativa) no êxito dos consertos.
+
+# Materiais e Métodos {#sec-metodos}
+
+## Fonte de Dados e Pré-processamento {#sec-dados}
+
+Os dados analisados provêm do repositório público *TidyTuesday* (edição de 07 de abril de 2026), compilados originalmente a partir do sistema *Repair Monitor* (Open Repair Alliance / Repair Café International). A base bruta é composta por duas tabelas relacionais (`repairs.csv` e `repairs_text.csv`), totalizando inicialmente `r fmt_int(resumo_limpeza$n_original)` registros de atendimento.
+
+O fluxo de limpeza e padronização foi executado em linguagem R (`v. 4.6.1`) utilizando o ecossistema `tidyverse` (Wickham et al., 2019), seguindo etapas rigorosas de controle de qualidade:
+
+* **Remoção de identificadores duplicados:** Foram identificados e excluídos `r fmt_int(resumo_limpeza$n_ids_repetidos)` registros cujo código `repair_id` aparecia duplicado com produtos e datas divergentes, impossibilitando a vinculação inequívoca com os relatos textuais.
+* **Padronização de desfechos e filtros temporais:** A variável resposta foi padronizada em três categorias ordinais (*Não consertado*, *Parcial* e *Consertado*), corrigindo inconsistências linguísticas (como registros em neerlandês). Foram descartados registros sem desfecho válido ou com datas posteriores à publicação oficial do banco (07/04/2026).
+* **Validação de variáveis numéricas:** O ano de fabricação foi restrito ao intervalo plausível entre 1900 e o ano do atendimento, permitindo o cálculo da idade do item (`idade_produto`). O índice de reparabilidade (escala discreta de 1 a 10) teve valores iguais a zero convertidos para dados ausentes (`NA`).
+* **Tradução e categorização textual:** Países (`r resumo_limpeza$n_paises` nações), categorias de produtos (`r resumo_limpeza$n_categorias` grupos) e motivos de falha foram traduzidos para o português. As fontes de informação técnica consultadas pelos reparadores, originalmente registradas em texto livre multilíngue, foram classificadas via expressões regulares em seis grupos: *IA generativa*, *YouTube*, *iFixit*, *Manual ou fabricante*, *Internet (sites e buscas)* e *Outra*.
+
+Após o pré-processamento, a base analítica final consolidou **`r fmt_int(resumo_limpeza$n_final)` atendimentos válidos**, distribuídos em **`r fmt_int(resumo_limpeza$n_cafes)` unidades de *Repair Cafés*** ao redor do mundo, abrangendo `r fmt_int(resultados$visao_geral$n_produtos)` tipos distintos de produtos.
+
+## Métodos Estatísticos {#sec-estatistica}
+
+Para a análise descritiva, calcularam-se frequências absolutas, relativas e estimativas pontuais da taxa de sucesso completo (`resultado == "Consertado"`), acompanhadas de intervalos de confiança de 95% obtidos pelo método de Wilson com correção de continuidade (`prop.test`). Nas análises longitudinais, restringiu-se o recorte aos anos completos com volume consolidado (`r min(resultados$por_ano$ano)` a `r max(resultados$por_ano$ano)`), avaliando-se a tendência linear nas proporções anuais de sucesso por meio do teste de tendência de Cochran-Armitage (`prop.trend.test`).
+
+Para investigar associações entre variáveis categóricas (categoria do produto, país e consulta prévia a informações técnicas) e o desfecho do reparo, aplicou-se o teste qui-quadrado de Pearson ($\chi^2$), complementado pelo coeficiente $V$ de Cramér como medida de tamanho de efeito, definido por:
+
+$$V = \sqrt{\frac{\chi^2}{N \cdot \min(r - 1,\, c - 1)}}$$
+
+onde $N$ representa o tamanho amostral total e $r$ e $c$ correspondem, respectivamente, ao número de linhas e colunas da tabela de contingência. A comparação das distribuições do índice de reparabilidade entre os três níveis de desfecho foi conduzida pelo teste não paramétrico de Kruskal-Wallis, dada a natureza ordinal discreta e a assimetria da escala.
+
+Por fim, ajustou-se um modelo de regressão logística binária (GLM com função de ligação *logit*) para estimar o efeito conjunto da categoria do produto e da faixa etária do item (*Até 5 anos*, *6 a 10 anos*, *11 a 20 anos* e *Mais de 20 anos*) sobre a probabilidade de conserto completo ($n = `r fmt_int(resultados$n_modelo)`$ registros com idade válida). Os resultados são expressos em razões de chances (*Odds Ratios* — OR) com respectivos intervalos de confiança de 95% de Wald, adotando-se como referência a categoria de maior volume (*Eletrodomésticos elétricos*) e produtos mais recentes (*Até 5 anos*). Todas as análises adotaram nível de significância de $\alpha = 0{,}05$.
+
+# Resultados e Discussão {#sec-resultados}
+
+## Panorama Geral e Evolução Temporal {#sec-panorama}
+
+Dos `r fmt_int(resultados$visao_geral$n_reparos)` atendimentos analisados, **`r fmt_pct(resultados$taxa_geral$taxa)`** (IC 95%: `r fmt_pct(resultados$taxa_geral$ic_inf)` a `r fmt_pct(resultados$taxa_geral$ic_sup)`) resultaram em conserto completo, conforme detalhado na @tbl-desfecho. Somando-se os reparos parciais, observa-se que a maioria expressiva dos objetos levados aos eventos recebe alguma recuperação funcional, evitando o descarte imediato.
+
+```{r}
+#| label: tbl-desfecho
+#| tbl-cap: "Distribuição geral dos desfechos dos atendimentos registrados nos Repair Cafés."
+
+resultados$dist_resultado %>%
+  mutate(
+    Registros = fmt_int(n),
+    Proporcao = fmt_pct(prop)
+  ) %>%
+  select(Desfecho = resultado, Registros, `Proporção` = Proporcao) %>%
+  kable(align = c("l", "r", "r"))
+```
+
+Ao avaliar o comportamento histórico entre `r min(resultados$por_ano$ano)` e `r max(resultados$por_ano$ano)` (@fig-evolucao), verifica-se forte expansão no volume de registros após a retomada das atividades presenciais pós-pandemia, acompanhada de variação estatisticamente significativa na proporção de sucesso ao longo dos anos ($p `r fmt_p(resultados$teste_tendencia$p.value)`$, teste de tendência de Cochran-Armitage).
+
+```{r}
+#| label: fig-evolucao
+#| fig-cap: "Volume anual de atendimentos e taxa de sucesso completo entre 2017 e 2025."
+#| fig-height: 4.2
+
+ggplot(resultados$por_ano, aes(x = ano)) +
+  geom_col(aes(y = n_reparos), fill = "#cbd5e1", width = 0.65) +
+  geom_line(aes(y = taxa * max(n_reparos)), color = "#0f766e", linewidth = 1.1) +
+  geom_point(aes(y = taxa * max(n_reparos)), color = "#0f766e", size = 2.8) +
+  scale_x_continuous(breaks = resultados$por_ano$ano) +
+  scale_y_continuous(
+    name = "Número de atendimentos",
+    labels = fmt_int,
+    sec.axis = sec_axis(~ . / max(resultados$por_ano$n_reparos),
+                        name = "Taxa de sucesso completo",
+                        labels = scales::percent_format(accuracy = 1))
+  ) +
+  labs(x = "Ano do atendimento") +
+  theme(
+    axis.title.y.right = element_text(color = "#0f766e", face = "bold"),
+    axis.text.y.right = element_text(color = "#0f766e")
+  )
+```
+
+## Desempenho por Categoria de Produto e País {#sec-categorias}
+
+A taxa de sucesso varia substancialmente conforme a natureza do objeto ($\chi^2 = `r fmt_dec(resultados$teste_qui_cat$statistic, 1)`$, $p `r fmt_p(resultados$teste_qui_cat$p.value)`$, $V = `r fmt_dec(resultados$v_cat, 3)`$). Como ilustrado na @fig-categoria, categorias com mecânica mais acessível ou menor integração eletrônica — como **`r resultados$por_categoria$categoria[1]`** (`r fmt_pct(resultados$por_categoria$taxa[1])`) e **`r resultados$por_categoria$categoria[2]`** (`r fmt_pct(resultados$por_categoria$taxa[2])`) — apresentam índices de êxito superiores, enquanto itens miniaturizados ou altamente integrados, como **`r tail(resultados$por_categoria$categoria, 1)`** (`r fmt_pct(tail(resultados$por_categoria$taxa, 1))`), exibem maior dificuldade técnica.
+
+```{r}
+#| label: fig-categoria
+#| fig-cap: "Taxa de conserto completo (com IC 95%) por categoria de produto."
+#| fig-height: 5
+
+resultados$por_categoria %>%
+  mutate(categoria = fct_reorder(categoria, taxa)) %>%
+  ggplot(aes(x = taxa, y = categoria)) +
+  geom_errorbarh(aes(xmin = ic_inf, xmax = ic_sup), height = 0.25, color = "#64748b") +
+  geom_point(aes(size = n), color = "#0f766e") +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0.3, 0.9)) +
+  scale_size_continuous(name = "Total de reparos", labels = fmt_int) +
+  labs(x = "Taxa de conserto completo", y = NULL) +
+  theme(legend.position = "bottom")
+```
+
+Na comparação geográfica entre os `r nrow(resultados$por_pais)` países com ao menos 1.000 registros (@tbl-paises), observa-se associação significativa entre o país e o desfecho ($\chi^2 = `r fmt_dec(resultados$teste_qui_pais$statistic, 1)`$, $p `r fmt_p(resultados$teste_qui_pais$p.value)`$), embora com tamanho de efeito modesto ($V = `r fmt_dec(resultados$v_pais, 3)`$), sugerindo consistência operacional da metodologia dos *Repair Cafés* em diferentes contextos nacionais.
+
+```{r}
+#| label: tbl-paises
+#| tbl-cap: "Taxa de sucesso completo nos países com 1.000 ou mais registros."
+
+resultados$por_pais %>%
+  mutate(
+    Atendimentos = fmt_int(n),
+    Consertados = fmt_int(consertados),
+    Taxa = fmt_pct(taxa),
+    IC95 = paste0("[", fmt_pct(ic_inf), " ; ", fmt_pct(ic_sup), "]")
+  ) %>%
+  select(`País` = pais, Atendimentos, Consertados, `Taxa de Sucesso` = Taxa, `IC 95%` = IC95) %>%
+  kable(align = c("l", "r", "r", "r", "c"))
+```
+
+## Índice de Reparabilidade, Idade do Produto e Modelo Logístico {#sec-modelo}
+
+A nota de reparabilidade atribuída pelos técnicos apresentou forte discriminação entre os desfechos ($H = `r fmt_dec(resultados$teste_kw_reparab$statistic, 1)`$, $p `r fmt_p(resultados$teste_kw_reparab$p.value)`$, teste de Kruskal-Wallis). Enquanto itens totalmente consertados obtiveram mediana de **`r fmt_dec(resultados$reparab_resultado$mediana[resultados$reparab_resultado$resultado == "Consertado"], 1)`** (média `r fmt_dec(resultados$reparab_resultado$media[resultados$reparab_resultado$resultado == "Consertado"], 1)`), os não consertados registraram mediana de apenas **`r fmt_dec(resultados$reparab_resultado$mediana[resultados$reparab_resultado$resultado == "Não consertado"], 1)`**.
+
+No ajuste da regressão logística múltipla ($n = `r fmt_int(resultados$n_modelo)`$, $\text{AIC} = `r fmt_dec(resultados$aic_modelo, 1)`$), controlado simultaneamente pela categoria do item e pela faixa etária (@fig-modelo), evidencia-se que a idade do produto exerce impacto significativo sobre a probabilidade de recuperação, refletindo mudanças históricas no design industrial, disponibilidade de peças e facilidade de abertura dos aparelhos.
+
+```{r}
+#| label: fig-modelo
+#| fig-cap: "Razões de chances (Odds Ratios e IC 95%) para o sucesso do conserto segundo categoria e faixa etária."
+#| fig-height: 5.5
+
+resultados$tabela_modelo %>%
+  mutate(
+    significativo = ifelse(p_valor < 0.05, "Significativo (p < 0,05)", "Não significativo"),
+    termo = fct_reorder(termo, razao_chances)
+  ) %>%
+  ggplot(aes(x = razao_chances, y = termo, color = significativo)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_errorbarh(aes(xmin = ic_inf, xmax = ic_sup), height = 0.25) +
+  geom_point(size = 2.6) +
+  scale_color_manual(values = c("Significativo (p < 0,05)" = "#0f766e", "Não significativo" = "#94a3b8"), name = NULL) +
+  scale_x_log10() +
+  labs(x = "Razão de Chances (OR - escala logarítmica)", y = NULL) +
+  theme(legend.position = "bottom")
+```
+
+## Motivos de Falha e Fontes de Informação Técnica {#sec-falhas}
+
+Entre os registros em que o reparo não foi concluído com êxito e houve justificativa documentada (@tbl-motivos), destacam-se **`r resultados$motivos$motivo_falha[1]`** (`r fmt_pct(resultados$motivos$prop[1])`) e **`r resultados$motivos$motivo_falha[2]`** (`r fmt_pct(resultados$motivos$prop[2])`), evidenciando barreiras estruturais ligadas ao projeto fechado dos fabricantes e à cadeia de reposição de componentes.
+
+```{r}
+#| label: tbl-motivos
+#| tbl-cap: "Principais motivos documentados para a falha no conserto."
+
+resultados$motivos %>%
+  head(8) %>%
+  mutate(
+    Registros = fmt_int(n),
+    Proporcao = fmt_pct(prop)
+  ) %>%
+  select(`Motivo da Falha` = motivo_falha, Registros, `Proporção` = Proporcao) %>%
+  kable(align = c("l", "r", "r"))
+```
+
+Por fim, a consulta a fontes de informação técnica durante o atendimento mostrou associação significativa com o desfecho ($\chi^2 = `r fmt_dec(resultados$teste_qui_consulta$statistic, 1)`$, $p `r fmt_p(resultados$teste_qui_consulta$p.value)`$). Na evolução recente das fontes utilizadas pelos voluntários (@fig-fontes), observa-se a consolidação de plataformas colaborativas e, nos últimos anos, a emergência do uso de ferramentas de **IA generativa** no apoio ao diagnóstico de falhas.
+
+```{r}
+#| label: fig-fontes
+#| fig-cap: "Distribuição relativa das fontes de informação técnica consultadas por ano (2017–2025)."
+#| fig-height: 4.2
+
+ggplot(resultados$fontes_por_ano, aes(x = ano, y = prop, fill = fonte_info)) +
+  geom_area(alpha = 0.9, color = "white", linewidth = 0.2) +
+  scale_x_continuous(breaks = resultados$por_ano$ano) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  scale_fill_brewer(palette = "Set2", name = "Fonte consultada") +
+  labs(x = "Ano", y = "Proporção dos atendimentos com consulta") +
+  theme(legend.position = "bottom")
+```
+
+# Conclusão {#sec-conclusao}
+
+Os resultados demonstram que os *Repair Cafés* alcançam elevada efetividade na recuperação de bens cotidianos, solucionando integralmente mais da metade das demandas recebidas e contribuindo diretamente para a economia circular. Entretanto, o sucesso do reparo não depende apenas da perícia dos voluntários: é fortemente condicionado pela categoria do produto, pela facilidade de acesso interno (refletida no índice de reparabilidade) e pela disponibilidade de peças de reposição.
+
+Como limitação, destaca-se que os registros do *Repair Monitor* representam uma amostra voluntária concentrada majoritariamente na Europa Ocidental e sujeita a subnotificação em campos textuais opcionais. Ainda assim, as evidências reforçam a importância de políticas públicas de *Direito ao Reparo* (*Right to Repair*) que exijam projetos modulares, manuais abertos e oferta acessível de componentes.
+
+# Referências Bibliográficas {#sec-referencias}
+
+* CHARTER, M.; KEILLER, S. **Grassroots Innovation and the Circular Economy: A Global Survey of Repair Cafés and Hackerspaces**. Farnham: The Centre for Sustainable Design, University for the Creative Arts, 2014.
+* OPEN REPAIR ALLIANCE. **Open Repair Data Standard & Repair Monitor Dataset**. 2026. Disponível em: <https://openrepair.org>. Acesso em: 24 nov. 2026.
+* R CORE TEAM. **R: A Language and Environment for Statistical Computing**. Vienna: R Foundation for Statistical Computing, 2026. Disponível em: <https://www.R-project.org/>.
+* WICKHAM, H. et al. Welcome to the tidyverse. **Journal of Open Source Software**, v. 4, n. 43, p. 1686, 2019. DOI: 10.21105/joss.01686.
+
+# Declaração de Uso de Inteligência Artificial {#sec-ia}
+
+Em conformidade com as diretrizes da disciplina, declara-se que ferramentas de inteligência artificial generativa foram utilizadas como apoio na estruturação do documento em Quarto Markdown, revisão da redação acadêmic e depuração de código R para visualização de dados.
+Todas as análises estatísticas, interpretações e validações dos resultados foram conduzidas e verificadas pelos integrantes do grupo.
