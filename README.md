@@ -7,7 +7,7 @@
 **Integrantes:**
 
 - Igor Marcon
-- Kelvin
+- Kevin Schelesting
 - Gabriele Henrique Pedro Sardá
 - Gabriel
 - Vinicius
