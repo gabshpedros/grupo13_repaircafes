@@ -116,16 +116,16 @@ theme_set(
 
 # Introdução {#sec-introducao}
 
-O modelo linear de produção e consumo — baseado na extração de recursos, fabricação, uso e descarte acelerado — tem gerado volumes crescentes de resíduos sólidos, especialmente resíduos de equipamentos eletroeletrônicos (REEE), têxteis e bens de consumo duráveis. Diante das barreiras impostas pela obsolescência programada e pelos elevados custos de assistência técnica autorizada, surgiram iniciativas comunitárias voltadas ao prolongamento da vida útil dos objetos cotidianos. Entre elas, destacam-se os *Repair Cafés*, encontros gratuitos e colaborativos iniciados nos Países Baixos em 2009, nos quais cidadãos levam itens danificados para repará-los em conjunto com voluntários especialistas (Charter & Keiller, 2014).
+Muitos objetos são descartados quando quebram, mesmo quando ainda poderiam ser consertados. Em parte isso acontece porque consertar pode sair caro, e alguns produtos são difíceis de abrir ou não têm peças de reposição. Os *Repair Cafés* surgiram nesse contexto: são encontros gratuitos, que começaram nos Países Baixos em 2009, em que as pessoas levam objetos quebrados e tentam consertá-los com a ajuda de voluntários (Charter & Keiller, 2014).
 
-Além do impacto ambiental e social direto, a rede global de *Repair Cafés* sistematiza registros detalhados de cada atendimento por meio da plataforma *Repair Monitor*, documentando características dos produtos, defeitos identificados, notas de reparabilidade e desfechos das intervenções. Essa base empírica permite investigar não apenas a viabilidade técnica do conserto comunitário, mas também os gargalos de projeto e de mercado que impedem a recuperação de determinados bens.
+Parte desses cafés registra seus atendimentos na plataforma *Repair Monitor*, com informações sobre o produto, o defeito, uma nota de reparabilidade dada pelo voluntário e o resultado do conserto. Com esses registros é possível ver quais consertos costumam dar certo e o que aparece com mais frequência quando eles falham.
 
-O objetivo deste estudo é analisar os determinantes associados ao sucesso dos reparos realizados nos *Repair Cafés* ao redor do mundo entre `r format(resultados$visao_geral$data_ini, "%Y")` e `r format(resultados$visao_geral$data_fim, "%Y")`. Especificamente, busca-se:
+Neste trabalho analisamos os atendimentos registrados entre `r format(resultados$visao_geral$data_ini, "%Y")` e `r format(resultados$visao_geral$data_fim, "%Y")`. Nossos objetivos foram:
 
-1. Caracterizar o panorama global dos atendimentos e a evolução temporal da taxa de sucesso;
-2. Avaliar diferenças nas taxas de conserto entre categorias de produtos e países com maior volume de registros;
-3. Investigar a relação entre o índice de reparabilidade atribuído pelos técnicos, a idade do produto e a probabilidade de reparo completo;
-4. Identificar os principais motivos de falha e o papel da consulta a fontes de informação técnica (incluindo manuais, plataformas colaborativas e inteligência artificial generativa) no êxito dos consertos.
+1. Descrever os atendimentos e ver como a taxa de sucesso mudou ao longo dos anos;
+2. Comparar a taxa de conserto entre categorias de produto e entre os países com mais registros;
+3. Verificar se a nota de reparabilidade e a idade do produto estão associadas ao conserto completo;
+4. Levantar os motivos de falha mais comuns e ver se consultar fontes de informação (manuais, vídeos, iFixit, IA generativa) está associado ao resultado.
 
 # Materiais e Métodos {#sec-metodos}
 
