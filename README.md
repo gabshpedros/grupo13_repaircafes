@@ -43,4 +43,15 @@
 
 ## Declaração de uso de IA
 
-*(a preencher ao final do trabalho)*
+O relatório foi feito inteiramente pelo grupo, sem uso de inteligência artificial.
+
+No aplicativo Shiny, usamos o Claude (Anthropic) e o Google AI Studio em duas tarefas pontuais, para ganhar tempo:
+
+escrever os comentários que explicam o código do app (app/app.R e app/funcoes.R);
+revisar nomes e acentuação dos textos que aparecem na interface.
+
+A estrutura do app, a lógica do código, os gráficos e a escolha do que mostrar em cada aba foram feitos pelo grupo. Tudo o que as ferramentas sugeriram foi lido e conferido antes de entrar na versão final.
+
+Prompt utilizado (reconstruído pelo grupo, já que não guardamos o texto original; a ideia e o pedido foram estes):
+
+Vou te mandar o código de um aplicativo Shiny em R. Não mude a lógica, os nomes das funções nem o funcionamento do app. Quero só duas coisas: (1) adicione comentários curtos, em português, explicando o que cada parte do código faz; (2) corrija os nomes e a acentuação dos textos que aparecem para o usuário (títulos, abas, rótulos e legendas). Me devolva o código completo com essas alterações.
