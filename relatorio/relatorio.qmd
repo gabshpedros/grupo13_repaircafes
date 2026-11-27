@@ -4,19 +4,25 @@ title: "Repair Cafés pelo mundo: o que dá para consertar?"
 subtitle: "Análise estatística dos fatores associados ao sucesso de reparos colaborativos (2015–2026)"
 author:
   - "Igor Marcon"
-  - "Kelvin"
+  - "Kevin Schelesting"
   - "Gabriele Henrique Pedro Sardá"
   - "Gabriel"
   - "Vinícius Eduardo Batista"
 date: today
 date-format: "DD/MM/YYYY"
 lang: pt-BR
+title-block-banner: "#2a1a12"        # espresso, a mesma cor da barra do app
+title-block-banner-color: "#ffffff"
 format:
   html:
     toc: true
     toc-title: "Sumário"
     number-sections: true
     theme: cosmo
+    mainfont: "Helvetica Neue, Helvetica, Arial, sans-serif"   # mesma fonte do app e dos gráficos
+    fig-width: 8
+    fig-height: 4.5
+    fig-align: center
     code-fold: true
     code-summary: "Mostrar código R"
     embed-resources: true
@@ -45,16 +51,67 @@ resultados     <- readRDS("../data/resultados.rds")
 fmt_int <- function(x) format(round(x), big.mark = ".", decimal.mark = ",", scientific = FALSE)
 fmt_dec <- function(x, casas = 1) format(round(x, casas), big.mark = ".", decimal.mark = ",", nsmall = casas)
 fmt_pct <- function(x, casas = 1) paste0(fmt_dec(x * 100, casas), "%")
-fmt_p   <- function(p) ifelse(p < 0.001, "< 0,001", fmt_dec(p, 3))
+fmt_p   <- function(p) ifelse(p < 0.001, "< 0,001", paste("=", fmt_dec(p, 3)))
+
+# ---- Identidade visual (a mesma do app Shiny) ----------------------------------
+# Paleta tirada do tema, Repair CAFÉ:
+# - o resultado do conserto é ordinal, então usa as camadas de um café:
+#   latte (não consertado) -> cortado (parcial) -> espresso (consertado)
+# - gráficos de "taxa de conserto" em espresso
+# - categorias sem ordem (fontes) com cores de um cardápio de café
+cor_principal <- "#4a2c1d"   # espresso: dados de taxa de conserto
+cor_escura    <- "#2a1a12"   # espresso escuro: títulos e destaques
+cor_detalhe   <- "#d9953f"   # caramelo: intervalos de confiança e realces
+cor_clara     <- "#ecdcc8"   # espuma: faixas suaves
+cor_texto     <- "#2a211c"
+cinza_texto   <- "#7a6a5e"
+cinza_grade   <- "#ece2d6"
+cinza_neutro  <- "#c9bcae"   # itens não significativos
+
+cores_resultado <- c("Não consertado" = "#d2a679",   # latte
+                     "Parcial"        = "#a0673d",   # cortado
+                     "Consertado"     = "#4a2c1d")   # espresso
+cores_fontes  <- c("Internet (sites e buscas)" = "#3d73b5",   # mirtilo
+                   "YouTube"                   = "#b34a62",   # frutas vermelhas
+                   "Manual ou fabricante"      = "#d9953f",   # caramelo
+                   "iFixit"                    = "#7a9a48",   # pistache
+                   "IA generativa"             = "#7a5fa6",   # lavanda
+                   "Outra"                     = "#a65f2c")   # grão de café
 
 theme_set(
-  theme_minimal(base_size = 11) +
+  theme_minimal(base_size = 11, base_family = "sans") +
     theme(
-      plot.title = element_text(face = "bold", size = 12),
-      plot.subtitle = element_text(color = "grey35", size = 10),
-      panel.grid.minor = element_blank()
+      text             = element_text(color = cor_texto),
+      axis.text        = element_text(color = cinza_texto),
+      axis.title       = element_text(color = cinza_texto),
+      panel.grid.minor = element_blank(),
+      panel.grid.major = element_line(color = cinza_grade, linewidth = 0.4),
+      strip.text       = element_text(face = "bold", color = cor_escura),
+      legend.title     = element_text(color = cinza_texto)
     )
 )
+```
+
+```{=html}
+<style>
+  /* mesmas cores do app: espresso, caramelo e leite */
+  h1, h2, h3 { color: #2a1a12; font-weight: 700; }
+  h1 { border-bottom: 2px solid #d9953f; padding-bottom: .3rem; margin-top: 2.2rem; }
+  a, a:hover, .quarto-xref { color: #a65f2c !important; }
+  .quarto-title-banner { border-bottom: 3px solid #d9953f; padding: 2.4rem 0; }
+  .quarto-title-banner .subtitle { opacity: .8; }
+  .quarto-title-meta-heading { color: #7a6a5e; text-transform: uppercase;
+                               font-size: .75rem; letter-spacing: .5px; }
+  figcaption, .figure-caption, caption { color: #7a6a5e; font-size: .86rem; }
+  table { font-size: .88rem; }
+  table thead th { color: #2a1a12; font-size: .8rem; text-transform: uppercase;
+                   letter-spacing: .3px; border-bottom: 2px solid #d9953f !important; }
+  table tbody tr:nth-child(odd) { background: #faf5ee; }
+  table tbody tr:hover { background: #f3e6d6; }
+  #TOC .nav-link { color: #7a6a5e !important; }
+  #TOC .nav-link.active { color: #a65f2c !important; border-left-color: #a65f2c !important; font-weight: 600; }
+  div.sourceCode { background: #faf5ee; }
+</style>
 ```
 
 # Introdução {#sec-introducao}
@@ -120,26 +177,22 @@ Ao avaliar o comportamento histórico entre `r min(resultados$por_ano$ano)` e `r
 
 ```{r}
 #| label: fig-evolucao
-#| fig-cap: "Volume anual de atendimentos e taxa de sucesso completo entre 2017 e 2025."
-#| fig-height: 4.2
+#| fig-cap: "Volume anual de atendimentos (esquerda) e taxa de sucesso completo (direita) entre 2017 e 2025."
+#| fig-height: 4
 
-ggplot(resultados$por_ano, aes(x = ano)) +
-  geom_col(aes(y = n_reparos), fill = "#cbd5e1", width = 0.65) +
-  geom_line(aes(y = taxa * max(n_reparos)), color = "#0f766e", linewidth = 1.1) +
-  geom_point(aes(y = taxa * max(n_reparos)), color = "#0f766e", size = 2.8) +
+# dois painéis em vez de um gráfico com dois eixos y, que distorce a leitura
+resultados$por_ano %>%
+  select(ano, `Número de atendimentos` = n_reparos, `Taxa de sucesso completo` = taxa) %>%
+  pivot_longer(-ano, names_to = "indicador", values_to = "valor") %>%
+  ggplot(aes(x = ano, y = valor)) +
+  geom_line(color = cor_principal, linewidth = 1) +
+  geom_point(color = cor_principal, fill = "white", shape = 21, size = 2.6, stroke = 1.1) +
+  facet_wrap(~indicador, scales = "free_y") +
   scale_x_continuous(breaks = resultados$por_ano$ano) +
-  scale_y_continuous(
-    name = "Número de atendimentos",
-    labels = fmt_int,
-    sec.axis = sec_axis(~ . / max(resultados$por_ano$n_reparos),
-                        name = "Taxa de sucesso completo",
-                        labels = scales::percent_format(accuracy = 1))
-  ) +
-  labs(x = "Ano do atendimento") +
-  theme(
-    axis.title.y.right = element_text(color = "#0f766e", face = "bold"),
-    axis.text.y.right = element_text(color = "#0f766e")
-  )
+  scale_y_continuous(labels = function(x) ifelse(x <= 1, scales::percent(x, accuracy = 1, decimal.mark = ","), fmt_int(x))) +
+  labs(x = "Ano do atendimento", y = NULL) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        strip.text = element_text(face = "bold", color = cor_escura))
 ```
 
 ## Desempenho por Categoria de Produto e País {#sec-categorias}
@@ -154,9 +207,9 @@ A taxa de sucesso varia substancialmente conforme a natureza do objeto ($\chi^2 
 resultados$por_categoria %>%
   mutate(categoria = fct_reorder(categoria, taxa)) %>%
   ggplot(aes(x = taxa, y = categoria)) +
-  geom_errorbarh(aes(xmin = ic_inf, xmax = ic_sup), height = 0.25, color = "#64748b") +
-  geom_point(aes(size = n), color = "#0f766e") +
-  scale_x_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0.3, 0.9)) +
+  geom_errorbarh(aes(xmin = ic_inf, xmax = ic_sup), height = 0.25, color = cor_detalhe) +
+  geom_point(aes(size = n), color = cor_principal) +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0.3, 1)) +
   scale_size_continuous(name = "Total de reparos", labels = fmt_int) +
   labs(x = "Taxa de conserto completo", y = NULL) +
   theme(legend.position = "bottom")
@@ -199,7 +252,7 @@ resultados$tabela_modelo %>%
   geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
   geom_errorbarh(aes(xmin = ic_inf, xmax = ic_sup), height = 0.25) +
   geom_point(size = 2.6) +
-  scale_color_manual(values = c("Significativo (p < 0,05)" = "#0f766e", "Não significativo" = "#94a3b8"), name = NULL) +
+  scale_color_manual(values = c("Significativo (p < 0,05)" = cor_principal, "Não significativo" = cinza_neutro), name = NULL) +
   scale_x_log10() +
   labs(x = "Razão de Chances (OR - escala logarítmica)", y = NULL) +
   theme(legend.position = "bottom")
@@ -227,15 +280,16 @@ Por fim, a consulta a fontes de informação técnica durante o atendimento most
 
 ```{r}
 #| label: fig-fontes
-#| fig-cap: "Distribuição relativa das fontes de informação técnica consultadas por ano (2017–2025)."
+#| fig-cap: "Participação de cada fonte de informação técnica nas consultas registradas, por ano (2017–2025)."
 #| fig-height: 4.2
 
-ggplot(resultados$fontes_por_ano, aes(x = ano, y = prop, fill = fonte_info)) +
-  geom_area(alpha = 0.9, color = "white", linewidth = 0.2) +
+ggplot(resultados$fontes_por_ano, aes(x = ano, y = prop, color = fonte_info)) +
+  geom_line(linewidth = 1) +
+  geom_point(fill = "white", shape = 21, size = 2.4, stroke = 1.1) +
+  scale_color_manual(values = cores_fontes, name = NULL) +
   scale_x_continuous(breaks = resultados$por_ano$ano) +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-  scale_fill_brewer(palette = "Set2", name = "Fonte consultada") +
-  labs(x = "Ano", y = "Proporção dos atendimentos com consulta") +
+  labs(x = "Ano", y = "Participação nas consultas") +
   theme(legend.position = "bottom")
 ```
 

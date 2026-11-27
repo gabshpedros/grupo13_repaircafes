@@ -143,6 +143,8 @@ reparos <- repairs_limpo %>%
   left_join(textos_limpo, by = "repair_id", relationship = "one-to-one")
 
 # ---- 6. Salva -----------------------------------------------------------------
+# garante que todos os textos fiquem em UTF-8, em qualquer computador
+reparos <- reparos %>% mutate(across(where(is.character), enc2utf8))
 saveRDS(reparos, "data/reparos.rds")
 
 # resumo da limpeza (usado no texto de Materiais e Métodos)
