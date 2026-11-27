@@ -2371,7 +2371,7 @@ window.Quarto = {
   <li><a href="#sec-introducao" id="toc-sec-introducao" class="nav-link active" data-scroll-target="#sec-introducao"><span class="header-section-number">1</span> Introdução</a></li>
   <li><a href="#sec-metodos" id="toc-sec-metodos" class="nav-link" data-scroll-target="#sec-metodos"><span class="header-section-number">2</span> Materiais e Métodos</a>
   <ul class="collapse">
-  <li><a href="#sec-dados" id="toc-sec-dados" class="nav-link" data-scroll-target="#sec-dados"><span class="header-section-number">2.1</span> Fonte de Dados e Pré-processamento</a></li>
+  <li><a href="#sec-dados" id="toc-sec-dados" class="nav-link" data-scroll-target="#sec-dados"><span class="header-section-number">2.1</span> Fonte dos dados e limpeza</a></li>
   <li><a href="#sec-estatistica" id="toc-sec-estatistica" class="nav-link" data-scroll-target="#sec-estatistica"><span class="header-section-number">2.2</span> Métodos Estatísticos</a></li>
   </ul></li>
   <li><a href="#sec-resultados" id="toc-sec-resultados" class="nav-link" data-scroll-target="#sec-resultados"><span class="header-section-number">3</span> Resultados e Discussão</a>
@@ -2427,16 +2427,17 @@ div.sourceCode { background: #faf5ee; }
 <section id="sec-metodos" class="level1" data-number="2">
 <h1 data-number="2"><span class="header-section-number">2</span> Materiais e Métodos</h1>
 <section id="sec-dados" class="level2" data-number="2.1">
-<h2 data-number="2.1" class="anchored" data-anchor-id="sec-dados"><span class="header-section-number">2.1</span> Fonte de Dados e Pré-processamento</h2>
-<p>Os dados analisados provêm do repositório público <em>TidyTuesday</em> (edição de 07 de abril de 2026), compilados originalmente a partir do sistema <em>Repair Monitor</em> (Open Repair Alliance / Repair Café International). A base bruta é composta por duas tabelas relacionais (<code>repairs.csv</code> e <code>repairs_text.csv</code>), totalizando inicialmente 178.749 registros de atendimento.</p>
-<p>O fluxo de limpeza e padronização foi executado em linguagem R (<code>v. 4.6.1</code>) utilizando o ecossistema <code>tidyverse</code> (Wickham et al., 2019), seguindo etapas rigorosas de controle de qualidade:</p>
+<h2 data-number="2.1" class="anchored" data-anchor-id="sec-dados"><span class="header-section-number">2.1</span> Fonte dos dados e limpeza</h2>
+<p>Os dados vêm do <em>TidyTuesday</em> de 07/04/2026, que disponibilizou uma extração do <em>Repair Monitor</em>, plataforma da Repair Café International onde os cafés registram seus atendimentos. São duas tabelas: <code>repairs.csv</code>, com os dados de cada atendimento, e <code>repairs_text.csv</code>, com os campos de texto, como o motivo da falha e a fonte de informação consultada. A tabela principal tinha 178.749 registros.</p>
+<p>A limpeza foi feita no R (versão 4.5.0) com os pacotes do <code>tidyverse</code> (Wickham et al., 2019), no script <code>R/01_importacao_limpeza.R</code>. Os passos foram:</p>
 <ul>
-<li><strong>Remoção de identificadores duplicados:</strong> Foram identificados e excluídos 66 registros cujo código <code>repair_id</code> aparecia duplicado com produtos e datas divergentes, impossibilitando a vinculação inequívoca com os relatos textuais.</li>
-<li><strong>Padronização de desfechos e filtros temporais:</strong> A variável resposta foi padronizada em três categorias ordinais (<em>Não consertado</em>, <em>Parcial</em> e <em>Consertado</em>), corrigindo inconsistências linguísticas (como registros em neerlandês). Foram descartados registros sem desfecho válido ou com datas posteriores à publicação oficial do banco (07/04/2026).</li>
-<li><strong>Validação de variáveis numéricas:</strong> O ano de fabricação foi restrito ao intervalo plausível entre 1900 e o ano do atendimento, permitindo o cálculo da idade do item (<code>idade_produto</code>). O índice de reparabilidade (escala discreta de 1 a 10) teve valores iguais a zero convertidos para dados ausentes (<code>NA</code>).</li>
-<li><strong>Tradução e categorização textual:</strong> Países (25 nações), categorias de produtos (14 grupos) e motivos de falha foram traduzidos para o português. As fontes de informação técnica consultadas pelos reparadores, originalmente registradas em texto livre multilíngue, foram classificadas via expressões regulares em seis grupos: <em>IA generativa</em>, <em>YouTube</em>, <em>iFixit</em>, <em>Manual ou fabricante</em>, <em>Internet (sites e buscas)</em> e <em>Outra</em>.</li>
+<li>tiramos 66 linhas cujo <code>repair_id</code> aparecia duas vezes com produto e data diferentes. Como as duas tabelas são ligadas por esse código, não dava para saber qual texto era de qual conserto;</li>
+<li>deixamos o resultado em três níveis (<em>Não consertado</em>, <em>Parcial</em> e <em>Consertado</em>). Alguns registros vinham com “ja” (sim, em holandês) e foram tratados como consertados. Descartamos registros sem resultado e com data depois de 07/04/2026, dia da publicação do banco;</li>
+<li>consideramos válido só o ano de fabricação entre 1900 e o ano do atendimento, e com ele calculamos a idade do produto. Notas de reparabilidade fora da escala de 1 a 10 (na prática, notas 0) viraram <code>NA</code>;</li>
+<li>traduzimos para o português os nomes dos 25 países, das 14 categorias de produto e dos motivos de falha;</li>
+<li>a fonte de informação consultada era texto livre, em várias línguas. Agrupamos por palavras-chave em seis tipos: <em>IA generativa</em>, <em>YouTube</em>, <em>iFixit</em>, <em>Manual ou fabricante</em>, <em>Internet (sites e buscas)</em> e <em>Outra</em>.</li>
 </ul>
-<p>Após o pré-processamento, a base analítica final consolidou <strong>178.676 atendimentos válidos</strong>, distribuídos em <strong>448 unidades de <em>Repair Cafés</em></strong> ao redor do mundo, abrangendo 1.952 tipos distintos de produtos.</p>
+<p>Depois disso juntamos as duas tabelas pelo <code>repair_id</code>. A base final ficou com 178.676 atendimentos, de 448 <em>Repair Cafés</em>, envolvendo 1.952 tipos de produto.</p>
 </section>
 <section id="sec-estatistica" class="level2" data-number="2.2">
 <h2 data-number="2.2" class="anchored" data-anchor-id="sec-estatistica"><span class="header-section-number">2.2</span> Métodos Estatísticos</h2>
