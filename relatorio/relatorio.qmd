@@ -129,18 +129,19 @@ Neste trabalho analisamos os atendimentos registrados entre `r format(resultados
 
 # Materiais e Métodos {#sec-metodos}
 
-## Fonte de Dados e Pré-processamento {#sec-dados}
+## Fonte dos dados e limpeza {#sec-dados}
 
-Os dados analisados provêm do repositório público *TidyTuesday* (edição de 07 de abril de 2026), compilados originalmente a partir do sistema *Repair Monitor* (Open Repair Alliance / Repair Café International). A base bruta é composta por duas tabelas relacionais (`repairs.csv` e `repairs_text.csv`), totalizando inicialmente `r fmt_int(resumo_limpeza$n_original)` registros de atendimento.
+Os dados vêm do *TidyTuesday* de 07/04/2026, que disponibilizou uma extração do *Repair Monitor*, plataforma da Repair Café International onde os cafés registram seus atendimentos. São duas tabelas: `repairs.csv`, com os dados de cada atendimento, e `repairs_text.csv`, com os campos de texto, como o motivo da falha e a fonte de informação consultada. A tabela principal tinha `r fmt_int(resumo_limpeza$n_original)` registros.
 
-O fluxo de limpeza e padronização foi executado em linguagem R (`v. 4.6.1`) utilizando o ecossistema `tidyverse` (Wickham et al., 2019), seguindo etapas rigorosas de controle de qualidade:
+A limpeza foi feita no R (versão `r getRversion()`) com os pacotes do `tidyverse` (Wickham et al., 2019), no script `R/01_importacao_limpeza.R`. Os passos foram:
 
-* **Remoção de identificadores duplicados:** Foram identificados e excluídos `r fmt_int(resumo_limpeza$n_ids_repetidos)` registros cujo código `repair_id` aparecia duplicado com produtos e datas divergentes, impossibilitando a vinculação inequívoca com os relatos textuais.
-* **Padronização de desfechos e filtros temporais:** A variável resposta foi padronizada em três categorias ordinais (*Não consertado*, *Parcial* e *Consertado*), corrigindo inconsistências linguísticas (como registros em neerlandês). Foram descartados registros sem desfecho válido ou com datas posteriores à publicação oficial do banco (07/04/2026).
-* **Validação de variáveis numéricas:** O ano de fabricação foi restrito ao intervalo plausível entre 1900 e o ano do atendimento, permitindo o cálculo da idade do item (`idade_produto`). O índice de reparabilidade (escala discreta de 1 a 10) teve valores iguais a zero convertidos para dados ausentes (`NA`).
-* **Tradução e categorização textual:** Países (`r resumo_limpeza$n_paises` nações), categorias de produtos (`r resumo_limpeza$n_categorias` grupos) e motivos de falha foram traduzidos para o português. As fontes de informação técnica consultadas pelos reparadores, originalmente registradas em texto livre multilíngue, foram classificadas via expressões regulares em seis grupos: *IA generativa*, *YouTube*, *iFixit*, *Manual ou fabricante*, *Internet (sites e buscas)* e *Outra*.
+- tiramos `r fmt_int(resumo_limpeza$n_ids_repetidos)` linhas cujo `repair_id` aparecia duas vezes com produto e data diferentes. Como as duas tabelas são ligadas por esse código, não dava para saber qual texto era de qual conserto;
+- deixamos o resultado em três níveis (*Não consertado*, *Parcial* e *Consertado*). Alguns registros vinham com "ja" (sim, em holandês) e foram tratados como consertados. Descartamos registros sem resultado e com data depois de 07/04/2026, dia da publicação do banco;
+- consideramos válido só o ano de fabricação entre 1900 e o ano do atendimento, e com ele calculamos a idade do produto. Notas de reparabilidade fora da escala de 1 a 10 (na prática, notas 0) viraram `NA`;
+- traduzimos para o português os nomes dos `r resumo_limpeza$n_paises` países, das `r resumo_limpeza$n_categorias` categorias de produto e dos motivos de falha;
+- a fonte de informação consultada era texto livre, em várias línguas. Agrupamos por palavras-chave em seis tipos: *IA generativa*, *YouTube*, *iFixit*, *Manual ou fabricante*, *Internet (sites e buscas)* e *Outra*.
 
-Após o pré-processamento, a base analítica final consolidou **`r fmt_int(resumo_limpeza$n_final)` atendimentos válidos**, distribuídos em **`r fmt_int(resumo_limpeza$n_cafes)` unidades de *Repair Cafés*** ao redor do mundo, abrangendo `r fmt_int(resultados$visao_geral$n_produtos)` tipos distintos de produtos.
+Depois disso juntamos as duas tabelas pelo `repair_id`. A base final ficou com `r fmt_int(resumo_limpeza$n_final)` atendimentos, de `r fmt_int(resumo_limpeza$n_cafes)` *Repair Cafés*, envolvendo `r fmt_int(resultados$visao_geral$n_produtos)` tipos de produto.
 
 ## Métodos Estatísticos {#sec-estatistica}
 
