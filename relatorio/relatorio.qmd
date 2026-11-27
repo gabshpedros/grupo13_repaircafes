@@ -71,12 +71,12 @@ cinza_neutro  <- "#c9bcae"   # itens não significativos
 cores_resultado <- c("Não consertado" = "#d2a679",   # latte
                      "Parcial"        = "#a0673d",   # cortado
                      "Consertado"     = "#4a2c1d")   # espresso
-cores_fontes  <- c("Internet (sites e buscas)" = "#3d73b5",   # mirtilo
-                   "YouTube"                   = "#b34a62",   # frutas vermelhas
-                   "Manual ou fabricante"      = "#d9953f",   # caramelo
-                   "iFixit"                    = "#7a9a48",   # pistache
-                   "IA generativa"             = "#7a5fa6",   # lavanda
-                   "Outra"                     = "#a65f2c")   # grão de café
+cores_fontes  <- c("Internet (sites e buscas)" = "#2a1a12",   # espresso escuro
+                   "YouTube"                   = "#5c3824",   # café torrado
+                   "Manual ou fabricante"      = "#8c5832",   # cortado intenso
+                   "iFixit"                    = "#b57c47",   # caramelo médio
+                   "IA generativa"             = "#d9953f",   # caramelo dourado
+                   "Outra"                     = "#c9bcae")   # espuma / neutro
 
 theme_set(
   theme_minimal(base_size = 11, base_family = "sans") +
@@ -296,9 +296,13 @@ ggplot(resultados$fontes_por_ano, aes(x = ano, y = prop, color = fonte_info)) +
 
 # Conclusão {#sec-conclusao}
 
-Os resultados demonstram que os *Repair Cafés* alcançam elevada efetividade na recuperação de bens cotidianos, solucionando integralmente mais da metade das demandas recebidas e contribuindo diretamente para a economia circular. Entretanto, o sucesso do reparo não depende apenas da perícia dos voluntários: é fortemente condicionado pela categoria do produto, pela facilidade de acesso interno (refletida no índice de reparabilidade) e pela disponibilidade de peças de reposição.
+A análise dos atendimentos registrados nos Repair Cafés mostrou que o resultado dos consertos varia de acordo com o tipo de produto e com suas características. A categoria do item apresentou diferenças nas taxas de sucesso, enquanto a nota de reparabilidade também se mostrou relacionada ao resultado final. Os produtos com avaliações mais altas de reparabilidade tiveram melhores resultados, o que faz sentido considerando que a facilidade de desmontagem e o acesso aos componentes podem interferir diretamente no trabalho dos voluntários.
 
-Como limitação, destaca-se que os registros do *Repair Monitor* representam uma amostra voluntária concentrada majoritariamente na Europa Ocidental e sujeita a subnotificação em campos textuais opcionais. Ainda assim, as evidências reforçam a importância de políticas públicas de *Direito ao Reparo* (*Right to Repair*) que exijam projetos modulares, manuais abertos e oferta acessível de componentes.
+A comparação entre os países também apontou diferenças, mas a associação encontrada foi pequena. Já a análise dos motivos de falha mostrou que nem todos os reparos deixam de ser concluídos pelas mesmas razões, o que evidencia a variedade de dificuldades enfrentadas durante os atendimentos. Em relação às fontes de informação, encontramos uma associação com o resultado dos consertos, mas não é possível concluir que consultar determinada fonte seja, por si só, responsável por aumentar as chances de sucesso.
+
+É importante considerar que os dados utilizados representam apenas os atendimentos registrados na plataforma Repair Monitor. Portanto, os resultados não necessariamente representam todos os Repair Cafés existentes, principalmente aqueles que não registram suas atividades. Além disso, algumas informações dependem do preenchimento dos voluntários, o que pode gerar registros incompletos.
+
+De modo geral, o estudo permitiu identificar quais características aparecem associadas aos melhores resultados nos atendimentos. Mais do que apontar uma única causa para o sucesso dos reparos, os dados mostram que o tipo de produto, sua condição de reparabilidade e as dificuldades encontradas durante o atendimento precisam ser considerados em conjunto para entender por que alguns consertos são concluídos e outros não.
 
 # Referências Bibliográficas {#sec-referencias}
 
@@ -309,5 +313,5 @@ Como limitação, destaca-se que os registros do *Repair Monitor* representam um
 
 # Declaração de Uso de Inteligência Artificial {#sec-ia}
 
-Em conformidade com as diretrizes da disciplina, declara-se que ferramentas de inteligência artificial generativa foram utilizadas como apoio na estruturação do documento em Quarto Markdown, revisão da redação acadêmic e depuração de código R para visualização de dados.
+Em conformidade com as diretrizes da disciplina, declara-se que ferramentas de inteligência artificial generativa foram utilizadas como apoio na estruturação do documento em Quarto Markdown, revisão da redação acadêmica e depuração de código R para visualização de dados.
 Todas as análises estatísticas, interpretações e validações dos resultados foram conduzidas e verificadas pelos integrantes do grupo.
